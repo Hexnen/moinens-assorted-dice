@@ -1,0 +1,12 @@
+# OS / editor junk
+Thumbs.db
+desktop.ini
+.DS_Store
+*.swp
+
+# build intermediates (final faces are committed; montages/debug are not)
+textures/**/_work/
+textures/**/_raw/
+textures/**/_preview.webp
+textures/**/_cost.json
+textures/**/_dsn_snippet.js
