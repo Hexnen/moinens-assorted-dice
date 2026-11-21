@@ -6,6 +6,16 @@ const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 // "Moinen's Assorted Dice" heading in the Dice So Nice UI (System constructor: id, name, mode, group).
 const GROUP = "Moinen's Assorted Dice";
 
+// The stonetop calibration list is shared by three brands — fetch it once.
+let _stonetopBaked;
+function loadStonetopBaked() {
+  _stonetopBaked ??= fetch(`modules/${MODULE_ID}/data/stonetop-baked.json`)
+    .then((r) => (r.ok ? r.json() : []))
+    .then((list) => (Array.isArray(list) ? list : []))
+    .catch(() => []);
+  return _stonetopBaked;
+}
+
 // Moinen's Assorted Dice — one module that bundles several custom Dice So Nice! sets and serves the one
 // matching the active game system. Each "brand" is registered by its own function below; the brand whose
 // system is active is registered FIRST and as "preferred" so DSN defaults to it (DSN keeps the first
@@ -24,9 +34,7 @@ const SYSTEM_MAP = {
 // (transform already applied); others use the identity texture.
 async function registerStonetop(dice3d, mode) {
   const base = `${TEX}/stonetop`;
-  const baked = await fetch(`modules/${MODULE_ID}/data/stonetop-baked.json`)
-    .then((r) => (r.ok ? r.json() : []))
-    .catch(() => []);
+  const baked = await loadStonetopBaked();
   const tex = (type, rel) => `${base}/${baked.includes(type) ? "_fit/" : ""}${rel}.webp`;
 
   dice3d.addSystem({ id: "stonetop", name: "Stonetop", group: GROUP }, mode);
@@ -34,7 +42,7 @@ async function registerStonetop(dice3d, mode) {
     name: "Stonetop Stone", composite: "source-over",
     source: `${base}/stone.webp`, bump: `${base}/stone-bump.webp`
   });
-  dice3d.addColorset({
+  await dice3d.addColorset({
     name: "stonetop", description: "Carved Stone", category: "Stonetop",
     foreground: "#3a2d1a", background: "#cab68c", edge: "#9a8a63", outline: "#241c12",
     texture: "stonetop-stone", material: "wood", font: "Arial"
@@ -68,9 +76,7 @@ async function registerStonetop(dice3d, mode) {
 // so background/edge just match it for the bevels.
 async function registerStonetopBrown(dice3d, mode) {
   const base = `${TEX}/stonetop-brown`;
-  const baked = await fetch(`modules/${MODULE_ID}/data/stonetop-baked.json`)
-    .then((r) => (r.ok ? r.json() : []))
-    .catch(() => []);
+  const baked = await loadStonetopBaked();
   const tex = (type, rel) => `${base}/${baked.includes(type) ? "_fit/" : ""}${rel}.webp`;
 
   dice3d.addSystem({ id: "stonetop-brown", name: "Stonetop (Brown)", group: GROUP }, mode);
@@ -78,7 +84,7 @@ async function registerStonetopBrown(dice3d, mode) {
     name: "Stonetop Brown Stone", composite: "source-over",
     source: `${base}/stone.webp`, bump: `${base}/stone-bump.webp`
   });
-  dice3d.addColorset({
+  await dice3d.addColorset({
     name: "stonetop-brown", description: "Carved Stone (Brown)", category: "Stonetop",
     foreground: "#e8dcc4", background: "#714e30", edge: "#714e30", outline: "#120c06",
     texture: "stonetop-brown-stone", material: "wood", font: "Arial"
@@ -114,9 +120,7 @@ async function registerStonetopBrown(dice3d, mode) {
 // via the "Dice Color" picker), no new face files. Reuses the stonetop calibration (stonetop-baked.json).
 async function registerStonetopBrownBody(dice3d, mode) {
   const base = `${TEX}/stonetop`;
-  const baked = await fetch(`modules/${MODULE_ID}/data/stonetop-baked.json`)
-    .then((r) => (r.ok ? r.json() : []))
-    .catch(() => []);
+  const baked = await loadStonetopBaked();
   const tex = (type, rel) => `${base}/${baked.includes(type) ? "_fit/" : ""}${rel}.webp`;
 
   dice3d.addSystem({ id: "stonetop-brownbody", name: "Stonetop (Brown Body)", group: GROUP }, mode);
@@ -124,7 +128,7 @@ async function registerStonetopBrownBody(dice3d, mode) {
     name: "Stonetop Stone (tintable)", composite: "multiply",
     source: `${base}/stone-tint.webp`, bump: `${base}/stone-bump.webp`
   });
-  dice3d.addColorset({
+  await dice3d.addColorset({
     name: "stonetop-brownbody", description: "Carved Stone (original faces, brown body)", category: "Stonetop",
     foreground: "#3a2d1a", background: "#7a522c", edge: "#714e30", outline: "#120c06",
     texture: "stonetop-stone-tint", material: "wood", font: "Arial"
@@ -153,10 +157,10 @@ async function registerStonetopBrownBody(dice3d, mode) {
 }
 
 // ── Brand: Mythic Bastionland (illuminated parchment) ────────────────────────────────────────────────
-function registerMB(dice3d, mode) {
+async function registerMB(dice3d, mode) {
   const base = `${TEX}/mythic-bastionland`;
   dice3d.addSystem({ id: "mb-dice", name: "Mythic Bastionland", group: GROUP }, mode);
-  dice3d.addColorset({
+  await dice3d.addColorset({
     name: "mb-dice", description: "Illuminated Parchment", category: "Mythic Bastionland",
     foreground: "#6b531d", background: "#e3d8bb", edge: "#b9a778", outline: "#4a3a1c",
     material: "wood", font: "Arial"
@@ -184,10 +188,10 @@ function registerMB(dice3d, mode) {
 }
 
 // ── Brand: Salvage Union (weathered salvage crate) ───────────────────────────────────────────────────
-function registerSalvage(dice3d, mode) {
+async function registerSalvage(dice3d, mode) {
   const base = `${TEX}/salvage-union`;
   dice3d.addSystem({ id: "salvage-union", name: "Salvage Union", group: GROUP }, mode);
-  dice3d.addColorset({
+  await dice3d.addColorset({
     name: "salvage-union", description: "Scrapyard", category: "Salvage Union",
     foreground: "#f4f1ea", background: "#8cc7d6", edge: "#1b2327", outline: "#10161a",
     material: "stone", font: "Arial"   // matte stone — renders the baked full textures cleanly (no plastic)
@@ -219,10 +223,10 @@ function registerSalvage(dice3d, mode) {
 // SPIRAL PIPS (1-6); the other dice carry Phantom Runes numerals. Full baked faces (matte plastic). NOT
 // in SYSTEM_MAP — the carved-stone "stonetop" brand stays the default for the Stonetop system; this one
 // registers as "default" so it's selectable in the DSN library.
-function registerStonetopBone(dice3d, mode) {
+async function registerStonetopBone(dice3d, mode) {
   const base = `${TEX}/stonetop-bone`;
   dice3d.addSystem({ id: "stonetop-bone", name: "Stonetop Bone", group: GROUP }, mode);
-  dice3d.addColorset({
+  await dice3d.addColorset({
     name: "stonetop-bone", description: "Carved Bone", category: "Stonetop",
     foreground: "#3a2d1a", background: "#dfceaa", edge: "#c9b78f", outline: "#2c2114",
     material: "stone", font: "Arial"   // stone: matte carved-bone finish (no glossy plastic sheen)
@@ -256,10 +260,10 @@ function registerStonetopBone(dice3d, mode) {
 // The Stonetop Bone face set with ONE change: a glossy RESIN material instead of matte stone — an amber
 // (fossil-resin), warm translucent finish. Reuses the same textures/stonetop-bone/ faces (no new art).
 // Selectable in the DSN library; not tied to any system.
-function registerStonetopAmber(dice3d, mode) {
+async function registerStonetopAmber(dice3d, mode) {
   const base = `${TEX}/stonetop-bone`;   // reuse the bone faces as-is
   dice3d.addSystem({ id: "stonetop-amber", name: "Stonetop Amber", group: GROUP }, mode);
-  dice3d.addColorset({
+  await dice3d.addColorset({
     name: "stonetop-amber", description: "Amber (resin)", category: "Stonetop",
     foreground: "#3a2d1a", background: "#dfceaa", edge: "#c9b78f", outline: "#2c2114",
     material: "resin", font: "Arial"   // resin: glossy translucent amber finish over the bone faces
@@ -294,10 +298,10 @@ function registerStonetopAmber(dice3d, mode) {
 // value-6 face of each is a koi curled into the digit 6, eye in the opposite colour (the yin-yang seed).
 // Not tied to a game system (registered "default"); selectable in the DSN library under "Amanojaku".
 function makeAmanojakuD6(brand, name, cs) {
-  return function (dice3d, mode) {
+  return async function (dice3d, mode) {
     const base = `${TEX}/${brand}`;
     dice3d.addSystem({ id: brand, name, group: GROUP }, mode);
-    dice3d.addColorset({
+    await dice3d.addColorset({
       name: brand, description: name, category: "Amanojaku",
       foreground: cs.fg, background: cs.bg, edge: cs.edge, outline: cs.outline,
       material: cs.material, font: "Arial"   // matte (velvet/stone) — baked full faces, never plastic
@@ -335,6 +339,11 @@ Hooks.once("diceSoNiceReady", async (dice3d) => {
   const order = Object.keys(BRANDS).sort((a, b) => (a === active ? -1 : b === active ? 1 : 0));
   console.log(`${MODULE_ID} | system "${game.system?.id}" -> brand "${active ?? "(none)"}"`);
   for (const brand of order) {
-    await BRANDS[brand](dice3d, brand === active ? "preferred" : "default");
+    // Isolate each brand: one failing set must not stop the remaining sets from registering.
+    try {
+      await BRANDS[brand](dice3d, brand === active ? "preferred" : "default");
+    } catch (err) {
+      console.error(`${MODULE_ID} | failed to register brand "${brand}"`, err);
+    }
   }
 });
