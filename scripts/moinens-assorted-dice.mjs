@@ -286,6 +286,37 @@ function registerStonetopAmber(dice3d, mode) {
   }, "d4");
 }
 
+// ── Brand: Amanojaku — Niebo / Ziemia (yin-yang d6 pair, sumi-e brush) ───────────────────────────────
+// A taijitu PAIR of d6, numerals from the Amanojaku Demo brush font (1001fonts, personal-use), FULL
+// baked faces (matte velvet). Generated TOGETHER in one image2 call (12-face montage) so both share one
+// ink style — see modules/amanojaku-dice/. Niebo (天, Yang): deep-indigo night sky + WHITE numerals +
+// white koi-6. Ziemia (地, Yin): cream washi + seigaiha waves + BLACK numerals + black koi-6. The
+// value-6 face of each is a koi curled into the digit 6, eye in the opposite colour (the yin-yang seed).
+// Not tied to a game system (registered "default"); selectable in the DSN library under "Amanojaku".
+function makeAmanojakuD6(brand, name, cs) {
+  return function (dice3d, mode) {
+    const base = `${TEX}/${brand}`;
+    dice3d.addSystem({ id: brand, name, group: GROUP }, mode);
+    dice3d.addColorset({
+      name: brand, description: name, category: "Amanojaku",
+      foreground: cs.fg, background: cs.bg, edge: cs.edge, outline: cs.outline,
+      material: cs.material, font: "Arial"   // matte (velvet/stone) — baked full faces, never plastic
+    }, mode);
+    dice3d.addDicePreset({
+      type: "d6", system: brand, colorset: brand,
+      labels: range(1, 6).map((n) => `${base}/d6f${n}.webp`),
+      bumpMaps: range(1, 6).map((n) => `${base}/d6f${n}-bump.webp`)
+    }, "d6");
+  };
+}
+// Yin-yang pair: Niebo (天, Yang) deep-indigo night sky + WHITE ink + white koi-6;
+// Ziemia (地, Yin) cream washi + BLACK ink + black koi-6. Each value-6 face is a koi curled
+// into the digit 6, with an opposite-colour eye (the taijitu seed). Built by tools/build_yinyang_dice.py.
+const registerAmanojakuNiebo = makeAmanojakuD6("amanojaku-niebo", "Amanojaku Niebo (天)",
+  { fg: "#f2f0ea", bg: "#18304f", edge: "#0f2138", outline: "#081320", material: "stone" });
+const registerAmanojakuZiemia = makeAmanojakuD6("amanojaku-ziemia", "Amanojaku Ziemia (地)",
+  { fg: "#1a1206", bg: "#e9e0c9", edge: "#ccbf9e", outline: "#3a2f17", material: "stone" });
+
 const BRANDS = {
   stonetop: registerStonetop,
   "stonetop-brown": registerStonetopBrown, // tinted faces (#714e30 baked); not in SYSTEM_MAP -> selectable
@@ -293,7 +324,9 @@ const BRANDS = {
   "stonetop-bone": registerStonetopBone, // ivory/bone faces, spiral-pip d6; not in SYSTEM_MAP -> selectable
   "stonetop-amber": registerStonetopAmber, // bone faces, resin material; not in SYSTEM_MAP -> selectable
   mb: registerMB,
-  salvage: registerSalvage
+  salvage: registerSalvage,
+  "amanojaku-niebo": registerAmanojakuNiebo,   // 天 Yang — nocne niebo, białe cyfry, biały koi-6
+  "amanojaku-ziemia": registerAmanojakuZiemia  // 地 Yin — kremowe washi, czarne cyfry, czarny koi-6
 };
 
 Hooks.once("diceSoNiceReady", async (dice3d) => {
