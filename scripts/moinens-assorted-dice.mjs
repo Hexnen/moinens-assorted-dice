@@ -6,15 +6,19 @@ const range = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 // "Moinen's Assorted Dice" heading in the Dice So Nice UI (System constructor: id, name, mode, group).
 const GROUP = "Moinen's Assorted Dice";
 
-// The stonetop calibration list is shared by three brands — fetch it once.
+// The stonetop calibration list is shared by three brands — fetch it once, as soon as the script loads,
+// so it is normally resolved long before diceSoNiceReady and the brands can register synchronously.
 let _stonetopBaked;
+let _stonetopBakedList = null;   // the resolved list, once known
 function loadStonetopBaked() {
   _stonetopBaked ??= fetch(`modules/${MODULE_ID}/data/stonetop-baked.json`)
     .then((r) => (r.ok ? r.json() : []))
     .then((list) => (Array.isArray(list) ? list : []))
-    .catch(() => []);
+    .catch(() => [])
+    .then((list) => (_stonetopBakedList = list));
   return _stonetopBaked;
 }
+loadStonetopBaked();
 
 // Moinen's Assorted Dice — one module that bundles several custom Dice So Nice! sets and serves the one
 // matching the active game system. Each "brand" is registered by its own function below; the brand whose
@@ -34,19 +38,10 @@ const SYSTEM_MAP = {
 // (transform already applied); others use the identity texture.
 async function registerStonetop(dice3d, mode) {
   const base = `${TEX}/stonetop`;
-  const baked = await loadStonetopBaked();
+  const baked = _stonetopBakedList ?? await loadStonetopBaked();
   const tex = (type, rel) => `${base}/${baked.includes(type) ? "_fit/" : ""}${rel}.webp`;
 
   dice3d.addSystem({ id: "stonetop", name: "Stonetop", group: GROUP }, mode);
-  await dice3d.addTexture("stonetop-stone", {
-    name: "Stonetop Stone", composite: "source-over",
-    source: `${base}/stone.webp`, bump: `${base}/stone-bump.webp`
-  });
-  await dice3d.addColorset({
-    name: "stonetop", description: "Carved Stone", category: "Stonetop",
-    foreground: "#3a2d1a", background: "#cab68c", edge: "#9a8a63", outline: "#241c12",
-    texture: "stonetop-stone", material: "wood", font: "Arial"
-  }, mode);
 
   const reg = (type, shape, names) => dice3d.addDicePreset({
     type, system: "stonetop", colorset: "stonetop",
@@ -68,6 +63,17 @@ async function registerStonetop(dice3d, mode) {
   reg("d10", "d10", [...range(2, 10), 1].map((n) => `d10f${n}`));
   reg("d12", "d12", range(1, 12).map((n) => `d12f${n}`));
   reg("d20", "d20", range(1, 20).map((n) => `d20f${n}`));
+
+  // Textures/colorset last: they await image/font loads, the system + presets above are already in.
+  await dice3d.addTexture("stonetop-stone", {
+    name: "Stonetop Stone", composite: "source-over",
+    source: `${base}/stone.webp`, bump: `${base}/stone-bump.webp`
+  });
+  await dice3d.addColorset({
+    name: "stonetop", description: "Carved Stone", category: "Stonetop",
+    foreground: "#3a2d1a", background: "#cab68c", edge: "#9a8a63", outline: "#241c12",
+    texture: "stonetop-stone", material: "wood", font: "Arial"
+  }, mode);
 }
 
 // ── Brand: Stonetop (Brown) — second colour of the carved-stone set ──────────────────────────────────
@@ -76,19 +82,10 @@ async function registerStonetop(dice3d, mode) {
 // so background/edge just match it for the bevels.
 async function registerStonetopBrown(dice3d, mode) {
   const base = `${TEX}/stonetop-brown`;
-  const baked = await loadStonetopBaked();
+  const baked = _stonetopBakedList ?? await loadStonetopBaked();
   const tex = (type, rel) => `${base}/${baked.includes(type) ? "_fit/" : ""}${rel}.webp`;
 
   dice3d.addSystem({ id: "stonetop-brown", name: "Stonetop (Brown)", group: GROUP }, mode);
-  await dice3d.addTexture("stonetop-brown-stone", {
-    name: "Stonetop Brown Stone", composite: "source-over",
-    source: `${base}/stone.webp`, bump: `${base}/stone-bump.webp`
-  });
-  await dice3d.addColorset({
-    name: "stonetop-brown", description: "Carved Stone (Brown)", category: "Stonetop",
-    foreground: "#e8dcc4", background: "#714e30", edge: "#714e30", outline: "#120c06",
-    texture: "stonetop-brown-stone", material: "wood", font: "Arial"
-  }, mode);
 
   const reg = (type, shape, names) => dice3d.addDicePreset({
     type, system: "stonetop-brown", colorset: "stonetop-brown",
@@ -110,6 +107,17 @@ async function registerStonetopBrown(dice3d, mode) {
   reg("d10", "d10", [...range(2, 10), 1].map((n) => `d10f${n}`));
   reg("d12", "d12", range(1, 12).map((n) => `d12f${n}`));
   reg("d20", "d20", range(1, 20).map((n) => `d20f${n}`));
+
+  // Textures/colorset last: they await image/font loads, the system + presets above are already in.
+  await dice3d.addTexture("stonetop-brown-stone", {
+    name: "Stonetop Brown Stone", composite: "source-over",
+    source: `${base}/stone.webp`, bump: `${base}/stone-bump.webp`
+  });
+  await dice3d.addColorset({
+    name: "stonetop-brown", description: "Carved Stone (Brown)", category: "Stonetop",
+    foreground: "#e8dcc4", background: "#714e30", edge: "#714e30", outline: "#120c06",
+    texture: "stonetop-brown-stone", material: "wood", font: "Arial"
+  }, mode);
 }
 
 // ── Brand: Stonetop (Brown Body) — original faces, brown #714e30 die body ────────────────────────────
@@ -120,19 +128,10 @@ async function registerStonetopBrown(dice3d, mode) {
 // via the "Dice Color" picker), no new face files. Reuses the stonetop calibration (stonetop-baked.json).
 async function registerStonetopBrownBody(dice3d, mode) {
   const base = `${TEX}/stonetop`;
-  const baked = await loadStonetopBaked();
+  const baked = _stonetopBakedList ?? await loadStonetopBaked();
   const tex = (type, rel) => `${base}/${baked.includes(type) ? "_fit/" : ""}${rel}.webp`;
 
   dice3d.addSystem({ id: "stonetop-brownbody", name: "Stonetop (Brown Body)", group: GROUP }, mode);
-  await dice3d.addTexture("stonetop-stone-tint", {
-    name: "Stonetop Stone (tintable)", composite: "multiply",
-    source: `${base}/stone-tint.webp`, bump: `${base}/stone-bump.webp`
-  });
-  await dice3d.addColorset({
-    name: "stonetop-brownbody", description: "Carved Stone (original faces, brown body)", category: "Stonetop",
-    foreground: "#3a2d1a", background: "#7a522c", edge: "#714e30", outline: "#120c06",
-    texture: "stonetop-stone-tint", material: "wood", font: "Arial"
-  }, mode);
 
   const reg = (type, shape, names) => dice3d.addDicePreset({
     type, system: "stonetop-brownbody", colorset: "stonetop-brownbody",
@@ -154,17 +153,23 @@ async function registerStonetopBrownBody(dice3d, mode) {
   reg("d10", "d10", [...range(2, 10), 1].map((n) => `d10f${n}`));
   reg("d12", "d12", range(1, 12).map((n) => `d12f${n}`));
   reg("d20", "d20", range(1, 20).map((n) => `d20f${n}`));
+
+  // Textures/colorset last: they await image/font loads, the system + presets above are already in.
+  await dice3d.addTexture("stonetop-stone-tint", {
+    name: "Stonetop Stone (tintable)", composite: "multiply",
+    source: `${base}/stone-tint.webp`, bump: `${base}/stone-bump.webp`
+  });
+  await dice3d.addColorset({
+    name: "stonetop-brownbody", description: "Carved Stone (original faces, brown body)", category: "Stonetop",
+    foreground: "#3a2d1a", background: "#7a522c", edge: "#714e30", outline: "#120c06",
+    texture: "stonetop-stone-tint", material: "wood", font: "Arial"
+  }, mode);
 }
 
 // ── Brand: Mythic Bastionland (illuminated parchment) ────────────────────────────────────────────────
 async function registerMB(dice3d, mode) {
   const base = `${TEX}/mythic-bastionland`;
   dice3d.addSystem({ id: "mb-dice", name: "Mythic Bastionland", group: GROUP }, mode);
-  await dice3d.addColorset({
-    name: "mb-dice", description: "Illuminated Parchment", category: "Mythic Bastionland",
-    foreground: "#6b531d", background: "#e3d8bb", edge: "#b9a778", outline: "#4a3a1c",
-    material: "wood", font: "Arial"
-  }, mode);
 
   const reg = (type, shape, names) => dice3d.addDicePreset({
     type, system: "mb-dice", colorset: "mb-dice",
@@ -185,17 +190,19 @@ async function registerMB(dice3d, mode) {
       bumpMaps: range(1, 4).map((n) => `${base}/d4f${n}-bump.webp`)
     }
   }, "d4");
+
+  // Textures/colorset last: they await image/font loads, the system + presets above are already in.
+  await dice3d.addColorset({
+    name: "mb-dice", description: "Illuminated Parchment", category: "Mythic Bastionland",
+    foreground: "#6b531d", background: "#e3d8bb", edge: "#b9a778", outline: "#4a3a1c",
+    material: "wood", font: "Arial"
+  }, mode);
 }
 
 // ── Brand: Salvage Union (weathered salvage crate) ───────────────────────────────────────────────────
 async function registerSalvage(dice3d, mode) {
   const base = `${TEX}/salvage-union`;
   dice3d.addSystem({ id: "salvage-union", name: "Salvage Union", group: GROUP }, mode);
-  await dice3d.addColorset({
-    name: "salvage-union", description: "Scrapyard", category: "Salvage Union",
-    foreground: "#f4f1ea", background: "#8cc7d6", edge: "#1b2327", outline: "#10161a",
-    material: "stone", font: "Arial"   // matte stone — renders the baked full textures cleanly (no plastic)
-  }, mode);
 
   const reg = (type, shape, names) => dice3d.addDicePreset({
     type, system: "salvage-union", colorset: "salvage-union",
@@ -216,6 +223,13 @@ async function registerSalvage(dice3d, mode) {
       bumpMaps: range(1, 4).map((n) => `${base}/d4f${n}-bump.webp`)
     }
   }, "d4");
+
+  // Textures/colorset last: they await image/font loads, the system + presets above are already in.
+  await dice3d.addColorset({
+    name: "salvage-union", description: "Scrapyard", category: "Salvage Union",
+    foreground: "#f4f1ea", background: "#8cc7d6", edge: "#1b2327", outline: "#10161a",
+    material: "stone", font: "Arial"   // matte stone — renders the baked full textures cleanly (no plastic)
+  }, mode);
 }
 
 // ── Brand: Stonetop Bone (carved ivory) ──────────────────────────────────────────────────────────────
@@ -226,11 +240,6 @@ async function registerSalvage(dice3d, mode) {
 async function registerStonetopBone(dice3d, mode) {
   const base = `${TEX}/stonetop-bone`;
   dice3d.addSystem({ id: "stonetop-bone", name: "Stonetop Bone", group: GROUP }, mode);
-  await dice3d.addColorset({
-    name: "stonetop-bone", description: "Carved Bone", category: "Stonetop",
-    foreground: "#3a2d1a", background: "#dfceaa", edge: "#c9b78f", outline: "#2c2114",
-    material: "stone", font: "Arial"   // stone: matte carved-bone finish (no glossy plastic sheen)
-  }, mode);
 
   const reg = (type, shape, names) => dice3d.addDicePreset({
     type, system: "stonetop-bone", colorset: "stonetop-bone",
@@ -254,6 +263,13 @@ async function registerStonetopBone(dice3d, mode) {
       bumpMaps: range(1, 4).map((n) => `${base}/d4f${n}-bump.webp`)
     }
   }, "d4");
+
+  // Textures/colorset last: they await image/font loads, the system + presets above are already in.
+  await dice3d.addColorset({
+    name: "stonetop-bone", description: "Carved Bone", category: "Stonetop",
+    foreground: "#3a2d1a", background: "#dfceaa", edge: "#c9b78f", outline: "#2c2114",
+    material: "stone", font: "Arial"   // stone: matte carved-bone finish (no glossy plastic sheen)
+  }, mode);
 }
 
 // ── Brand: Stonetop Amber (bone faces, resin material) ───────────────────────────────────────────────
@@ -263,11 +279,6 @@ async function registerStonetopBone(dice3d, mode) {
 async function registerStonetopAmber(dice3d, mode) {
   const base = `${TEX}/stonetop-bone`;   // reuse the bone faces as-is
   dice3d.addSystem({ id: "stonetop-amber", name: "Stonetop Amber", group: GROUP }, mode);
-  await dice3d.addColorset({
-    name: "stonetop-amber", description: "Amber (resin)", category: "Stonetop",
-    foreground: "#3a2d1a", background: "#dfceaa", edge: "#c9b78f", outline: "#2c2114",
-    material: "resin", font: "Arial"   // resin: glossy translucent amber finish over the bone faces
-  }, mode);
 
   const reg = (type, shape, names) => dice3d.addDicePreset({
     type, system: "stonetop-amber", colorset: "stonetop-amber",
@@ -288,6 +299,13 @@ async function registerStonetopAmber(dice3d, mode) {
       bumpMaps: range(1, 4).map((n) => `${base}/d4f${n}-bump.webp`)
     }
   }, "d4");
+
+  // Textures/colorset last: they await image/font loads, the system + presets above are already in.
+  await dice3d.addColorset({
+    name: "stonetop-amber", description: "Amber (resin)", category: "Stonetop",
+    foreground: "#3a2d1a", background: "#dfceaa", edge: "#c9b78f", outline: "#2c2114",
+    material: "resin", font: "Arial"   // resin: glossy translucent amber finish over the bone faces
+  }, mode);
 }
 
 // ── Brand: Amanojaku — Niebo / Ziemia (yin-yang d6 pair, sumi-e brush) ───────────────────────────────
@@ -301,16 +319,16 @@ function makeAmanojakuD6(brand, name, cs) {
   return async function (dice3d, mode) {
     const base = `${TEX}/${brand}`;
     dice3d.addSystem({ id: brand, name, group: GROUP }, mode);
-    await dice3d.addColorset({
-      name: brand, description: name, category: "Amanojaku",
-      foreground: cs.fg, background: cs.bg, edge: cs.edge, outline: cs.outline,
-      material: cs.material, font: "Arial"   // matte (velvet/stone) — baked full faces, never plastic
-    }, mode);
     dice3d.addDicePreset({
       type: "d6", system: brand, colorset: brand,
       labels: range(1, 6).map((n) => `${base}/d6f${n}.webp`),
       bumpMaps: range(1, 6).map((n) => `${base}/d6f${n}-bump.webp`)
     }, "d6");
+    await dice3d.addColorset({
+      name: brand, description: name, category: "Amanojaku",
+      foreground: cs.fg, background: cs.bg, edge: cs.edge, outline: cs.outline,
+      material: cs.material, font: "Arial"   // matte (velvet/stone) — baked full faces, never plastic
+    }, mode);
   };
 }
 // Yin-yang pair: Niebo (天, Yang) deep-indigo night sky + WHITE ink + white koi-6;
@@ -338,12 +356,16 @@ Hooks.once("diceSoNiceReady", async (dice3d) => {
   // Register the active brand FIRST so its "preferred" claim wins; others as "default".
   const order = Object.keys(BRANDS).sort((a, b) => (a === active ? -1 : b === active ? 1 : 0));
   console.log(`${MODULE_ID} | system "${game.system?.id}" -> brand "${active ?? "(none)"}"`);
-  for (const brand of order) {
-    // Isolate each brand: one failing set must not stop the remaining sets from registering.
+  // Start every brand in the same tick: each one adds its system + presets synchronously before its
+  // first await, so they are all in place before DSN's post-hook preloadPresets / persistent-dice
+  // restore runs (a sequential await chain left later sets — and, in a Stonetop world, the preferred
+  // set itself — unregistered at that point). Only the active brand is "preferred", so the order of
+  // the async tails does not matter. Each brand is isolated: one failing set never blocks the others.
+  await Promise.all(order.map(async (brand) => {
     try {
       await BRANDS[brand](dice3d, brand === active ? "preferred" : "default");
     } catch (err) {
       console.error(`${MODULE_ID} | failed to register brand "${brand}"`, err);
     }
-  }
+  }));
 });
